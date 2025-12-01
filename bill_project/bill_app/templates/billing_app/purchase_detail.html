@@ -1,0 +1,44 @@
+{% extends 'billing_app/base.html' %}
+{% block title %}Purchase Detail{% endblock %}
+{% block content %}
+<h2>Purchase #{{ purchase.id }}</h2>
+<p><strong>Customer:</strong> {{ purchase.customer_email }} <strong>Date:</strong> {{ purchase.created_at }}</p>
+
+<table>
+  <thead><tr><th>Product</th><th>Qty</th><th>Unit</th><th>Tax</th><th>Line Total</th></tr></thead>
+  <tbody>
+    {% for it in items %}
+    <tr>
+      <td>{{ it.product.name }}</td>
+      <td class="right">{{ it.quantity }}</td>
+      <td class="right">₹{{ it.unit_price }}</td>
+      <td class="right">{{ it.tax_percentage }}%</td>
+      <td class="right">₹{{ it.line_total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p>Subtotal: ₹{{ purchase.subtotal }}</p>
+<p>Tax: ₹{{ purchase.tax_total }}</p>
+<p><strong>Total: ₹{{ purchase.total }}</strong></p>
+<p>Cash Paid: ₹{{ purchase.cash_paid }}</p>
+<p>Change Given: ₹{{ purchase.change_given }}</p>
+
+<h4>Change Breakdown</h4>
+{% if purchase.change_breakdown %}
+  {% if purchase.change_breakdown.error %}
+    <p style="color:orange;">{{ purchase.change_breakdown.error }}</p>
+  {% else %}
+    <ul>
+      {% for val, cnt in purchase.change_breakdown.items %}
+        <li>₹{{ val }} x {{ cnt }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% else %}
+  <p>No change.</p>
+{% endif %}
+
+<p><a href="{% url 'bill_app:history' %}">Back to history</a></p>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends 'billing_app/base.html' %}
+{% block title %}Billing Page{% endblock %}
+{% block content %}
+<h2 style="text-align:center;">Billing Page</h2>
+
+<form id="billing_form" method="post" action="{% url 'bill_app:generate_bill' %}">
+  {% csrf_token %}
+  <label>Customer Email:
+    <input type="email" name="customer_email" id="customer_email" required placeholder="Email ID">
+  </label>
+
+  <h3 style="margin-top:16px;">Products</h3>
+  <table id="products_table">
+    <thead>
+      <tr>
+        <th style="width:60%;">Product</th>
+        <th style="width:20%;">Quantity</th>
+        <th style="width:20%;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- dynamic rows here -->
+    </tbody>
+  </table>
+
+  <button type="button" id="add_row" class="btn btn-default" style="margin-top:8px;">Add New</button>
+
+  <hr style="margin:20px 0;">
+
+  <div style="display:flex; gap:40px; align-items:flex-start;">
+    <div style="flex:1;">
+      <h3>Denominations (Available)</h3>
+      <table id="denominations_table">
+        <tbody>
+          {% for d in denominations %}
+          <tr>
+            <td style="width:60px;">{{ d.value }}</td>
+            <td>
+              <input type="number" min="0" class="denom_count_display" data-value="{{ d.value }}" value="{{ d.count }}" readonly style="width:80px;">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="flex:1;">
+      <h3>Cash paid by customer</h3>
+      <input type="number" step="0.01" name="cash_paid" id="cash_paid" placeholder="Amount" required style="width:160px;">
+      <div style="margin-top:18px;">
+        <button type="button" id="cancel_btn" class="btn btn-default">Cancel</button>
+        <button type="submit" id="generate_btn" class="btn btn-primary">Generate Bill</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<hr>
+
+<div style="margin-top:12px;">
+  <a href="{% url 'bill_app:history' %}">View Purchase History</a>
+</div>
+
+<script>
+$(function(){
+  let productsList = [];
+
+
+function fetchProducts() {
+    return $.get("{% url 'bill_app:get_products' %}").done(function(data){
+        productsList = data;  // This will now store the data
+        console.log("Products fetched:", productsList); // Debug
+    }).fail(function(){
+        alert("Failed to load products. Check console.");
+    });
+}
+
+
+function productOptionsHtml() {
+    let html = '<option value="">Select product</option>';
+    productsList.forEach(function (p) {
+        html += `<option value="${p.id}">${p.name}</option>`;
+    });
+    return html;
+}
+
+
+  function addRow() {
+    let row = `<tr>
+      <td>
+        <select name="product[]" class="product_select" required>
+          ${productOptionsHtml()}
+        </select>
+      </td>
+      <td>
+        <input type="number" name="qty[]" class="qty_input" min="1" value="1" required style="width:80px;">
+      </td>
+      <td>
+        <button type="button" class="remove_row btn btn-danger small">Remove</button>
+      </td>
+    </tr>`;
+    $("#products_table tbody").append(row);
+  }
+
+  // initial fetch and add one row
+  fetchProducts().then(function(){
+    addRow();
+  });
+
+  $("#add_row").click(function(){ addRow(); });
+
+  $(document).on('click', '.remove_row', function(){
+    $(this).closest('tr').remove();
+  });
+
+  $("#cancel_btn").click(function(){
+    // simple clear form
+    $("#billing_form")[0].reset();
+    $("#products_table tbody").empty();
+    addRow();
+  });
+
+  // On submit: optional client-side validations (server will validate too)
+  $("#billing_form").submit(function(e){
+    // ensure products selected
+    let ok = true;
+    $(".product_select").each(function(){
+      if(!$(this).val()){ ok = false; }
+    });
+    if(!ok){
+      alert("Select all products or remove empty rows.");
+      e.preventDefault();
+      return false;
+    }
+    // cash paid >= 0
+    let cash = parseFloat($("#cash_paid").val() || 0);
+    if(isNaN(cash)){
+      alert("Enter cash paid by customer.");
+      e.preventDefault();
+      return false;
+    }
+    // allow submit
+  });
+
+});
+</script>
+{% endblock %}

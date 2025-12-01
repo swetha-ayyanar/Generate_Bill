@@ -1,0 +1,48 @@
+{% extends 'billing_app/base.html' %}
+{% block title %}Invoice{% endblock %}
+{% block content %}
+<h2 style="text-align:center;">Invoice</h2>
+<p><strong>Purchase #{{ purchase.id }}</strong> &nbsp; {{ purchase.created_at }}</p>
+<p><strong>Customer:</strong> {{ purchase.customer_email }}</p>
+
+<table>
+  <thead>
+    <tr><th>Product</th><th>Qty</th><th>Unit</th><th>Tax %</th><th>Line Total</th></tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+    <tr>
+      <td>{{ it.product.name }} ({{ it.product.product_id }})</td>
+      <td class="right">{{ it.quantity }}</td>
+      <td class="right">₹{{ it.unit_price }}</td>
+      <td class="right">{{ it.tax_percentage }}%</td>
+      <td class="right">₹{{ it.line_total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr><td colspan="4" class="right">Subtotal</td><td class="right">₹{{ purchase.subtotal }}</td></tr>
+    <tr><td colspan="4" class="right">Tax</td><td class="right">₹{{ purchase.tax_total }}</td></tr>
+    <tr><td colspan="4" class="right"><strong>Total</strong></td><td class="right"><strong>₹{{ purchase.total }}</strong></td></tr>
+    <tr><td colspan="4" class="right">Cash Paid</td><td class="right">₹{{ purchase.cash_paid }}</td></tr>
+    <tr><td colspan="4" class="right">Change Given</td><td class="right">₹{{ purchase.change_given }}</td></tr>
+  </tfoot>
+</table>
+
+<h3>Change Breakdown</h3>
+{% if purchase.change_breakdown %}
+  {% if purchase.change_breakdown.error %}
+    <p style="color:orange;">{{ purchase.change_breakdown.error }} — Remaining unable: {{ purchase.change_breakdown.remaining_unable }}</p>
+  {% else %}
+    <ul>
+      {% for val, cnt in purchase.change_breakdown.items %}
+        <li>₹{{ val }} × {{ cnt }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% else %}
+  <p>No change to give.</p>
+{% endif %}
+
+<p style="margin-top:12px;"><a href="{% url 'bill_app:billing_page' %}">Create another bill</a> | <a href="{% url 'bill_app:history' %}">View history</a></p>
+{% endblock %}
